@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeIgniter 4 - 3rd Party API Machine Test Guide</title>
+<style>
+    :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #172033;
+        --muted: #5d687a;
+        --border: #dfe5ee;
+        --accent: #2563eb;
+        --accent-soft: #eaf1ff;
+        --code: #111827;
+        --code-text: #e5e7eb;
+        --success: #0f766e;
+        --warning: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.6;
+    }
+    .container { max-width: 1050px; margin: 0 auto; padding: 32px 20px 60px; }
+    header {
+        background: linear-gradient(135deg, #172554, #2563eb);
+        color: white;
+        padding: 42px 36px;
+        border-radius: 16px;
+        margin-bottom: 28px;
+    }
+    h1 { margin: 0 0 12px; font-size: 32px; }
+    h2 { margin-top: 38px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    h3 { margin-top: 28px; }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 22px;
+        margin: 18px 0;
+    }
+    .note {
+        background: var(--accent-soft);
+        border-left: 4px solid var(--accent);
+        padding: 14px 16px;
+        margin: 16px 0;
+    }
+    .warning {
+        background: #fff7ed;
+        border-left: 4px solid #f97316;
+        padding: 14px 16px;
+        margin: 16px 0;
+    }
+    .success {
+        background: #ecfdf5;
+        border-left: 4px solid #10b981;
+        padding: 14px 16px;
+        margin: 16px 0;
+    }
+    pre {
+        background: var(--code);
+        color: var(--code-text);
+        padding: 18px;
+        border-radius: 9px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+    code {
+        font-family: Consolas, Monaco, monospace;
+    }
+    :not(pre) > code {
+        background: #eef2f7;
+        padding: 2px 5px;
+        border-radius: 4px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 18px 0;
+        background: white;
+    }
+    th, td {
+        border: 1px solid var(--border);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+    }
+    th { background: #f0f4f9; }
+    .checklist li { margin: 8px 0; }
+    .small { font-size: 13px; color: var(--muted); }
+    .flow {
+        background: #0f172a;
+        color: #e2e8f0;
+        padding: 20px;
+        border-radius: 10px;
+        font-family: monospace;
+        white-space: pre-wrap;
+    }
+    .toc a {
+        color: var(--accent);
+        text-decoration: none;
+    }
+    .toc li { margin: 7px 0; }
+    @media print {
+        body { background: white; }
+        .container { max-width: none; padding: 0; }
+        header { color: black; background: white; border: 2px solid #222; }
+        pre { white-space: pre-wrap; }
+        .card { break-inside: avoid; }
+    }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+    <h1>CodeIgniter 4 — 3rd-Party API Machine Test Guide</h1>
+    <p style="color:#e5edff;margin:0;">
+        Complete practical workflow covering CRUD-style API integration, AJAX, JSON,
+        Bearer-token authentication, API keys, validation, error handling and MySQL.
+    </p>
+</header>
+
+<div class="card toc">
+<h2 style="margin-top:0;">Contents</h2>
+<ol>
+    <li><a href="#scenario">Machine-test scenario</a></li>
+    <li><a href="#workflow">The workflow to memorize</a></li>
+    <li><a href="#setup">Project setup</a></li>
+    <li><a href="#env">Environment and tokens</a></li>
+    <li><a href="#routes">Routes</a></li>
+    <li><a href="#controller">Controller</a></li>
+    <li><a href="#view">jQuery AJAX view</a></li>
+    <li><a href="#get">GET requests</a></li>
+    <li><a href="#post">POST requests</a></li>
+    <li><a href="#bearer">Bearer-token authentication</a></li>
+    <li><a href="#apikey">API-key authentication</a></li>
+    <li><a href="#errors">HTTP status and error handling</a></li>
+    <li><a href="#database">Saving API data to MySQL</a></li>
+    <li><a href="#service">Professional Service-class approach</a></li>
+    <li><a href="#checklist">Interview checklist</a></li>
+</ol>
+</div>
+
+<section id="scenario">
+<h2>1. Machine-test scenario</h2>
+<div class="card">
+<p>Assume the interviewer gives you this API:</p>
+<pre><code>GET https://restcountries.com/v3.1/name/{country}</code></pre>
+
+<p>Requirement:</p>
+<ul>
+    <li>Create a CodeIgniter 4 page.</li>
+    <li>Enter a country name.</li>
+    <li>Use jQuery AJAX to send the request to CodeIgniter.</li>
+    <li>CodeIgniter calls the third-party API.</li>
+    <li>Decode the JSON response.</li>
+    <li>Return a clean JSON response to the browser.</li>
+    <li>Display country information.</li>
+</ul>
+
+<div class="flow">Browser
+   ↓ AJAX
+CodeIgniter Controller
+   ↓
+Validate request
+   ↓
+Third-party API
+   ↓
+JSON response
+   ↓
+Process response
+   ↓
+Return JSON
+   ↓
+Browser displays result</div>
+</div>
+</section>
+
+<section id="workflow">
+<h2>2. Workflow to memorize</h2>
+<div class="card">
+<ol class="checklist">
+<li>Read the API documentation.</li>
+<li>Test the API in Postman.</li>
+<li>Identify HTTP method: GET, POST, PUT, PATCH or DELETE.</li>
+<li>Identify URL and path parameters.</li>
+<li>Identify query parameters.</li>
+<li>Identify authentication: Bearer token, API key, Basic Auth, OAuth, etc.</li>
+<li>Identify required headers.</li>
+<li>Identify request body and JSON structure.</li>
+<li>Create the CodeIgniter HTTP client.</li>
+<li>Send the request.</li>
+<li>Check HTTP status.</li>
+<li>Decode JSON.</li>
+<li>Handle API errors.</li>
+<li>Process or save the response.</li>
+<li>Return JSON to the frontend.</li>
+<li>Test through AJAX/browser.</li>
+</ol>
+</div>
+</section>
+
+<section id="setup">
+<h2>3. Project setup</h2>
+<pre><code>composer create-project codeigniter4/appstarter api-test
+cd api-test
+php spark serve</code></pre>
+
+<p>Open:</p>
+<pre><code>http://localhost:8080</code></pre>
+
+<p>If you already have a CodeIgniter 4 project, skip this step.</p>
+</section>
+
+<section id="env">
+<h2>4. Environment and tokens</h2>
+
+<div class="warning">
+<strong>Never hard-code real API tokens in PHP source code.</strong>
+Do not commit them to GitHub. Put secrets in <code>.env</code> or another secure secret store.
+</div>
+
+<p>Example <code>.env</code>:</p>
+<pre><code>CI_ENVIRONMENT = development
+
+THIRD_PARTY_API_URL = https://example.com/api
+THIRD_PARTY_API_TOKEN = your_real_token_here
+THIRD_PARTY_API_KEY = your_real_api_key_here</code></pre>
+
+<p>Read them in CodeIgniter with:</p>
+<pre><code>$token = env('THIRD_PARTY_API_TOKEN');
+$apiKey = env('THIRD_PARTY_API_KEY');</code></pre>
+
+<div class="note">
+The token shown above is a placeholder only. In a real machine test, replace it with the
+credential supplied by the interviewer.
+</div>
+</section>
+
+<section id="routes">
+<h2>5. Routes</h2>
+<p>Open <code>app/Config/Routes.php</code>:</p>
+
+<pre><code>$routes->get('country', 'CountryController::index');
+$routes->post('country/search', 'CountryController::search');</code></pre>
+
+<p>We now have:</p>
+<table>
+<tr><th>Method</th><th>URL</th><th>Purpose</th></tr>
+<tr><td>GET</td><td>/country</td><td>Display page</td></tr>
+<tr><td>POST</td><td>/country/search</td><td>Receive AJAX request and call API</td></tr>
+</table>
+</section>
+
+<section id="controller">
+<h2>6. Controller</h2>
+
+<p>Create:</p>
+<pre><code>app/Controllers/CountryController.php</code></pre>
+
+<p>Complete controller:</p>
+
+<pre><code>&lt;?php
+
+namespace App\Controllers;
+
+class CountryController extends BaseController
+{
+    public function index()
+    {
+        return view('country/index');
+    }
+
+    public function search()
+    {
+        $country = trim($this-&gt;request-&gt;getPost('country'));
+
+        // 1. Validate input
+        if ($country === '') {
+            return $this-&gt;response
+                -&gt;setStatusCode(422)
+                -&gt;setJSON([
+                    'status'  =&gt; false,
+                    'message' =&gt; 'Country name is required.'
+                ]);
+        }
+
+        try {
+
+            // 2. Create HTTP client
+            $client = \Config\Services::curlrequest([
+                'timeout' =&gt; 10,
+            ]);
+
+            // 3. Call third-party API
+            $url = 'https://restcountries.com/v3.1/name/'
+                 . urlencode($country);
+
+            $response = $client-&gt;get($url);
+
+            // 4. Check HTTP status
+            if ($response-&gt;getStatusCode() !== 200) {
+                return $this-&gt;response
+                    -&gt;setStatusCode(400)
+                    -&gt;setJSON([
+                        'status'  =&gt; false,
+                        'message' =&gt; 'Third-party API returned an error.'
+                    ]);
+            }
+
+            // 5. Decode JSON
+            $data = json_decode(
+                $response-&gt;getBody(),
+                true
+            );
+
+            // 6. Check response data
+            if (empty($data)) {
+                return $this-&gt;response
+                    -&gt;setStatusCode(404)
+                    -&gt;setJSON([
+                        'status'  =&gt; false,
+                        'message' =&gt; 'Country not found.'
+                    ]);
+            }
+
+            // 7. Extract only required fields
+            $countryData = $data[0];
+
+            $result = [
+                'name' =&gt; $countryData['name']['common'] ?? null,
+                'official_name' =&gt; $countryData['name']['official'] ?? null,
+                'capital' =&gt; $countryData['capital'][0] ?? null,
+                'region' =&gt; $countryData['region'] ?? null,
+                'population' =&gt; $countryData['population'] ?? 0,
+                'currency' =&gt; array_key_first(
+                    $countryData['currencies'] ?? []
+                ),
+            ];
+
+            // 8. Return JSON to browser
+            return $this-&gt;response-&gt;setJSON([
+                'status' =&gt; true,
+                'data'   =&gt; $result
+            ]);
+
+        } catch (\Exception $e) {
+
+            // 9. Handle connection/API errors
+            return $this-&gt;response
+                -&gt;setStatusCode(500)
+                -&gt;setJSON([
+                    'status'  =&gt; false,
+                    'message' =&gt; 'Unable to connect to third-party API.'
+                ]);
+        }
+    }
+}</code></pre>
+</section>
+
+<section id="view">
+<h2>7. jQuery AJAX view</h2>
+
+<p>Create:</p>
+<pre><code>app/Views/country/index.php</code></pre>
+
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;Country Search&lt;/title&gt;
+
+    &lt;script src="https://code.jquery.com/jquery-3.7.1.min.js"&gt;&lt;/script&gt;
+
+    &lt;style&gt;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        input {
+            padding: 10px;
+            width: 250px;
+        }
+
+        button {
+            padding: 10px 20px;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+
+        .error {
+            color: red;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+
+&lt;h2&gt;Country Search&lt;/h2&gt;
+
+&lt;form id="countryForm"&gt;
+
+    &lt;input
+        type="text"
+        id="country"
+        name="country"
+        placeholder="Enter country name"
+    &gt;
+
+    &lt;button type="submit"&gt;
+        Search
+    &lt;/button&gt;
+
+&lt;/form&gt;
+
+&lt;div id="result"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+
+$('#countryForm').submit(function(e) {
+
+    e.preventDefault();
+
+    let country = $('#country').val();
+
+    $('#result')
+        .hide()
+        .html('Loading...')
+        .show();
+
+    $.ajax({
+
+        url: "<?= base_url('country/search') ?>",
+
+        type: "POST",
+
+        dataType: "json",
+
+        data: {
+            country: country
+        },
+
+        success: function(response) {
+
+            if (response.status) {
+
+                let data = response.data;
+
+                $('#result').html(`
+                    &lt;h3&gt;${data.name}&lt;/h3&gt;
+
+                    &lt;p&gt;
+                        &lt;strong&gt;Official Name:&lt;/strong&gt;
+                        ${data.official_name ?? '-'}
+                    &lt;/p&gt;
+
+                    &lt;p&gt;
+                        &lt;strong&gt;Capital:&lt;/strong&gt;
+                        ${data.capital ?? '-'}
+                    &lt;/p&gt;
+
+                    &lt;p&gt;
+                        &lt;strong&gt;Region:&lt;/strong&gt;
+                        ${data.region ?? '-'}
+                    &lt;/p&gt;
+
+                    &lt;p&gt;
+                        &lt;strong&gt;Population:&lt;/strong&gt;
+                        ${data.population ?? '-'}
+                    &lt;/p&gt;
+
+                    &lt;p&gt;
+                        &lt;strong&gt;Currency:&lt;/strong&gt;
+                        ${data.currency ?? '-'}
+                    &lt;/p&gt;
+                `);
+
+            } else {
+
+                $('#result').html(
+                    `&lt;p class="error"&gt;${response.message}&lt;/p&gt;`
+                );
+            }
+        },
+
+        error: function(xhr) {
+
+            let message = 'Something went wrong.';
+
+            if (xhr.responseJSON) {
+                message = xhr.responseJSON.message;
+            }
+
+            $('#result').html(
+                `&lt;p class="error"&gt;${message}&lt;/p&gt;`
+            );
+        }
+
+    });
+
+});
+
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+</section>
+
+<section id="get">
+<h2>8. GET API requests</h2>
+
+<h3>Simple GET</h3>
+<pre><code>$client = \Config\Services::curlrequest();
+
+$response = $client-&gt;get(
+    'https://example.com/api/users'
+);
+
+$data = json_decode(
+    $response-&gt;getBody(),
+    true
+);</code></pre>
+
+<h3>GET with query parameters</h3>
+<pre><code>$response = $client-&gt;get(
+    'https://example.com/api/users',
+    [
+        'query' =&gt; [
+            'country' =&gt; 'India',
+            'status'  =&gt; 'active',
+        ]
+    ]
+);</code></pre>
+</section>
+
+<section id="post">
+<h2>9. POST API requests</h2>
+
+<p>If the API documentation says:</p>
+
+<pre><code>POST https://example.com/api/customers
+
+JSON:
+{
+    "name": "John",
+    "email": "john@example.com"
+}</code></pre>
+
+<p>Use:</p>
+
+<pre><code>$response = $client-&gt;post(
+    'https://example.com/api/customers',
+    [
+        'headers' =&gt; [
+            'Accept' =&gt; 'application/json',
+            'Content-Type' =&gt; 'application/json',
+        ],
+
+        'json' =&gt; [
+            'name'  =&gt; 'John',
+            'email' =&gt; 'john@example.com',
+        ]
+    ]
+);
+
+$data = json_decode(
+    $response-&gt;getBody(),
+    true
+);</code></pre>
+</section>
+
+<section id="bearer">
+<h2>10. Bearer-token authentication</h2>
+
+<div class="card">
+<p>This is one of the most important patterns to remember for interviews.</p>
+
+<p>Example API documentation:</p>
+
+<pre><code>Authorization: Bearer YOUR_TOKEN</code></pre>
+
+<p>Put the real token in <code>.env</code>:</p>
+
+<pre><code>THIRD_PARTY_API_TOKEN = your_real_token_here</code></pre>
+
+<p>Then:</p>
+
+<pre><code>$token = env('THIRD_PARTY_API_TOKEN');
+
+$response = $client-&gt;get(
+    'https://example.com/api/users',
+    [
+        'headers' =&gt; [
+            'Authorization' =&gt; 'Bearer ' . $token,
+            'Accept'        =&gt; 'application/json',
+        ]
+    ]
+);</code></pre>
+
+<h3>POST + Bearer token</h3>
+
+<pre><code>$token = env('THIRD_PARTY_API_TOKEN');
+
+$response = $client-&gt;post(
+    'https://example.com/api/customer',
+    [
+        'headers' =&gt; [
+            'Authorization' =&gt; 'Bearer ' . $token,
+            'Accept'        =&gt; 'application/json',
+            'Content-Type'  =&gt; 'application/json',
+        ],
+
+        'json' =&gt; [
+            'name'  =&gt; 'John',
+            'email' =&gt; 'john@example.com',
+        ]
+    ]
+);
+
+$result = json_decode(
+    $response-&gt;getBody(),
+    true
+);</code></pre>
+</div>
+</section>
+
+<section id="apikey">
+<h2>11. API-key authentication</h2>
+
+<p>Some APIs use an API key instead of a Bearer token.</p>
+
+<h3>API key in header</h3>
+
+<pre><code>$apiKey = env('THIRD_PARTY_API_KEY');
+
+$response = $client-&gt;get(
+    'https://example.com/api/users',
+    [
+        'headers' =&gt; [
+            'X-API-KEY' =&gt; $apiKey,
+            'Accept'    =&gt; 'application/json',
+        ]
+    ]
+);</code></pre>
+
+<h3>API key as query parameter</h3>
+
+<pre><code>$response = $client-&gt;get(
+    'https://example.com/api/users',
+    [
+        'query' =&gt; [
+            'api_key' =&gt; env('THIRD_PARTY_API_KEY')
+        ]
+    ]
+);</code></pre>
+
+<div class="note">
+Do not assume the authentication format. Read the API documentation and reproduce its
+required header/body/query format exactly.
+</div>
+</section>
+
+<section id="errors">
+<h2>12. HTTP status codes and error handling</h2>
+
+<table>
+<tr><th>Status</th><th>Meaning</th><th>Typical action</th></tr>
+<tr><td>200</td><td>OK</td><td>Process response</td></tr>
+<tr><td>201</td><td>Created</td><td>Process created resource</td></tr>
+<tr><td>400</td><td>Bad Request</td><td>Check request data</td></tr>
+<tr><td>401</td><td>Unauthorized</td><td>Check token/API credentials</td></tr>
+<tr><td>403</td><td>Forbidden</td><td>Check permissions</td></tr>
+<tr><td>404</td><td>Not Found</td><td>Check URL/resource</td></tr>
+<tr><td>422</td><td>Validation Error</td><td>Fix submitted data</td></tr>
+<tr><td>429</td><td>Too Many Requests</td><td>Respect rate limits</td></tr>
+<tr><td>500</td><td>Server Error</td><td>Third-party server problem</td></tr>
+<tr><td>503</td><td>Service Unavailable</td><td>Retry later if appropriate</td></tr>
+</table>
+
+<h3>Basic status check</h3>
+
+<pre><code>$statusCode = $response-&gt;getStatusCode();
+
+if ($statusCode &gt;= 200 &amp;&amp; $statusCode &lt; 300) {
+
+    $data = json_decode(
+        $response-&gt;getBody(),
+        true
+    );
+
+} else {
+
+    // API failed
+}</code></pre>
+
+<h3>Exception handling</h3>
+
+<pre><code>try {
+
+    $response = $client-&gt;get($url);
+
+    // Process response
+
+} catch (\Exception $e) {
+
+    return $this-&gt;response
+        -&gt;setStatusCode(500)
+        -&gt;setJSON([
+            'status'  =&gt; false,
+            'message' =&gt; 'Third-party API unavailable.'
+        ]);
+}</code></pre>
+</section>
+
+<section id="database">
+<h2>13. Saving API data to MySQL</h2>
+
+<p>If the API returns:</p>
+
+<pre><code>{
+    "id": 101,
+    "name": "John",
+    "email": "john@example.com"
+}</code></pre>
+
+<h3>Using a Model</h3>
+
+<pre><code>$model = new CustomerModel();
+
+$model-&gt;insert([
+    'external_id' =&gt; $data['id'],
+    'name'        =&gt; $data['name'],
+    'email'       =&gt; $data['email'],
+]);</code></pre>
+
+<h3>Using Query Builder</h3>
+
+<pre><code>$db = \Config\Database::connect();
+
+$db-&gt;table('customers')-&gt;insert([
+    'external_id' =&gt; $data['id'],
+    'name'        =&gt; $data['name'],
+    'email'       =&gt; $data['email'],
+]);</code></pre>
+
+<h3>Typical architecture</h3>
+
+<div class="flow">Browser
+   ↓
+AJAX
+   ↓
+Controller
+   ↓
+Validate input
+   ↓
+Third-party API
+   ↓
+Validate API response
+   ↓
+Model / Query Builder
+   ↓
+MySQL
+   ↓
+JSON response
+   ↓
+Browser</div>
+</section>
+
+<section id="service">
+<h2>14. Professional Service-class approach</h2>
+
+<p>For a small machine test, an API call inside the controller may be acceptable.
+For cleaner code, separate third-party API logic into a Service.</p>
+
+<pre><code>app/
+├── Controllers/
+│   └── CustomerController.php
+│
+├── Models/
+│   └── CustomerModel.php
+│
+├── Services/
+│   └── ThirdPartyApiService.php
+│
+└── Views/
+    └── customers/
+</code></pre>
+
+<p>Example service:</p>
+
+<pre><code>&lt;?php
+
+namespace App\Services;
+
+class ThirdPartyApiService
+{
+    protected $client;
+
+    public function __construct()
+    {
+        $this-&gt;client = \Config\Services::curlrequest([
+            'timeout' =&gt; 10,
+        ]);
+    }
+
+    public function createCustomer(array $data)
+    {
+        $token = env('THIRD_PARTY_API_TOKEN');
+
+        $response = $this-&gt;client-&gt;post(
+            env('THIRD_PARTY_API_URL') . '/customers',
+            [
+                'headers' =&gt; [
+                    'Authorization' =&gt; 'Bearer ' . $token,
+                    'Accept' =&gt; 'application/json',
+                    'Content-Type' =&gt; 'application/json',
+                ],
+
+                'json' =&gt; $data
+            ]
+        );
+
+        return [
+            'statusCode' =&gt; $response-&gt;getStatusCode(),
+            'data' =&gt; json_decode(
+                $response-&gt;getBody(),
+                true
+            )
+        ];
+    }
+}</code></pre>
+
+<p>Controller:</p>
+
+<pre><code>use App\Services\ThirdPartyApiService;
+
+public function store()
+{
+    $data = [
+        'name'  =&gt; $this-&gt;request-&gt;getPost('name'),
+        'email' =&gt; $this-&gt;request-&gt;getPost('email'),
+    ];
+
+    $apiService = new ThirdPartyApiService();
+
+    $result = $apiService-&gt;createCustomer($data);
+
+    if ($result['statusCode'] &gt;= 200
+        &amp;&amp; $result['statusCode'] &lt; 300) {
+
+        return $this-&gt;response-&gt;setJSON([
+            'status' =&gt; true,
+            'data'   =&gt; $result['data']
+        ]);
+    }
+
+    return $this-&gt;response
+        -&gt;setStatusCode($result['statusCode'])
+        -&gt;setJSON([
+            'status'  =&gt; false,
+            'message' =&gt; 'Third-party API request failed.'
+        ]);
+}</code></pre>
+</section>
+
+<section id="checklist">
+<h2>15. Interview-day checklist</h2>
+
+<div class="card">
+<h3>Before coding</h3>
+<ul class="checklist">
+<li>Read the API documentation completely.</li>
+<li>Test the endpoint in Postman.</li>
+<li>Confirm method.</li>
+<li>Confirm URL.</li>
+<li>Confirm authentication.</li>
+<li>Confirm headers.</li>
+<li>Confirm request body/parameters.</li>
+<li>Inspect a successful response.</li>
+<li>Inspect an error response.</li>
+</ul>
+
+<h3>While coding</h3>
+<ul class="checklist">
+<li>Keep credentials in <code>.env</code>.</li>
+<li>Validate user input.</li>
+<li>Use CodeIgniter's HTTP client.</li>
+<li>Set a reasonable timeout.</li>
+<li>Check the HTTP status code.</li>
+<li>Decode JSON safely.</li>
+<li>Handle API/network exceptions.</li>
+<li>Return consistent JSON.</li>
+<li>Use AJAX if requested.</li>
+<li>Use Model/Query Builder for database operations.</li>
+</ul>
+
+<h3>Before submitting</h3>
+<ul class="checklist">
+<li>Test success case.</li>
+<li>Test empty input.</li>
+<li>Test invalid input.</li>
+<li>Test invalid token.</li>
+<li>Test API 404.</li>
+<li>Test API/network failure if possible.</li>
+<li>Check browser console.</li>
+<li>Check CodeIgniter logs.</li>
+<li>Remove real credentials from source code.</li>
+<li>Make sure <code>.env</code> is not committed to Git.</li>
+</ul>
+</div>
+
+<div class="success">
+<strong>Core pattern to memorize:</strong><br><br>
+Read API docs → Test in Postman → Configure token → Create HTTP client →
+send request → check status → decode JSON → handle errors → process/save data →
+return JSON → test AJAX/browser.
+</div>
+
+<h2>16. Quick reference — authentication</h2>
+
+<table>
+<tr>
+<th>Authentication</th>
+<th>Typical CodeIgniter pattern</th>
+</tr>
+
+<tr>
+<td>Bearer Token</td>
+<td><code>Authorization: Bearer TOKEN</code></td>
+</tr>
+
+<tr>
+<td>API Key Header</td>
+<td><code>X-API-KEY: KEY</code></td>
+</tr>
+
+<tr>
+<td>API Key Query</td>
+<td><code>?api_key=KEY</code></td>
+</tr>
+
+<tr>
+<td>Basic Auth</td>
+<td>Use the HTTP client's authentication option according to the API documentation.</td>
+</tr>
+
+<tr>
+<td>OAuth 2</td>
+<td>Obtain an access token according to the provider's OAuth flow, then send the token as required.</td>
+</tr>
+</table>
+
+<h2>17. Final mental model</h2>
+
+<div class="flow">THIRD-PARTY API MACHINE TEST
+
+             API DOCUMENTATION
+                    ↓
+             ┌──────────────┐
+             │   Postman    │
+             └──────┬───────┘
+                    ↓
+        Method + URL + Auth + Body
+                    ↓
+             CodeIgniter 4
+                    ↓
+              Controller
+                    ↓
+               Validation
+                    ↓
+            HTTP Client / Service
+                    ↓
+             Third-party API
+                    ↓
+              HTTP Status
+                    ↓
+              JSON Response
+                    ↓
+          ┌─────────┴─────────┐
+          ↓                   ↓
+       Success              Error
+          ↓                   ↓
+   Process / Save       Handle gracefully
+          ↓                   ↓
+          └─────────┬─────────┘
+                    ↓
+                JSON Response
+                    ↓
+                AJAX / UI</div>
+
+<p class="small">
+This document uses placeholder credentials and example endpoints. For an actual machine
+test, always follow the authentication and request format specified by the API provider.
+</p>
+
+</section>
+
+</div>
+</body>
+</html>
