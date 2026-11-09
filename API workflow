@@ -1,0 +1,26 @@
+app/
+├── Config/
+│   ├── Routes.php.add
+│
+├── Controllers/
+│   ├── CountryController.php
+│   └── CustomerController.php
+│
+├── Database/
+│   └── Migrations/
+│       └── 2026-11-09-000001_CreateCustomers.php
+│
+├── Models/
+│   └── CustomerModel.php
+│
+├── Services/
+│   └── ThirdPartyApiService.php
+│
+└── Views/
+    ├── country/
+    │   └── index.php
+    │
+    └── customer/
+        └── create.php
+
+.env.example_api
